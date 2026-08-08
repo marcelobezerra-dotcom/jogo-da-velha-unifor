@@ -18,6 +18,9 @@ Este projeto implementa um jogo da velha web com interface institucional da UNIF
 - [docs/cdu_JogarJogodavelha.md](docs/cdu_JogarJogodavelha.md): caso de uso do projeto
 - [RELATORIO_PROMPTS.md](RELATORIO_PROMPTS.md): registro de uso de IA no desenvolvimento
 
+## Acesso ao site
+- Página publicada: https://marcelobezerra-dotcom.github.io/jogo-da-velha-unifor/
+
 ## Como executar
 1. Abra a pasta [src](src)
 2. Execute um servidor local, por exemplo:
