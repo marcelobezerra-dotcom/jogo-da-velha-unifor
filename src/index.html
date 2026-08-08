@@ -428,18 +428,79 @@
       playerOLabelEl.textContent = gameState.modeSelect === 'cpu' ? 'Computador' : 'Jogador O';
     }
 
-    function checkWinner() {
+    function checkWinner(board = gameState.options) {
       for (const pattern of winPatterns) {
         const [a, b, c] = pattern;
-        const values = [gameState.options[a], gameState.options[b], gameState.options[c]];
+        const values = [board[a], board[b], board[c]];
         if (values.every((value) => value && value === values[0])) {
           return { pattern, winner: values[0] };
         }
       }
-      if (gameState.options.every((value) => value)) {
+      if (board.every((value) => value)) {
         return { pattern: null, winner: 'draw' };
       }
       return null;
+    }
+
+    function minimax(board, isMaximizing) {
+      const result = checkWinner(board);
+      if (result?.winner === 'O') {
+        return 10;
+      }
+      if (result?.winner === 'X') {
+        return -10;
+      }
+      if (result?.winner === 'draw') {
+        return 0;
+      }
+
+      const availableMoves = board
+        .map((value, index) => ({ value, index }))
+        .filter((cell) => !cell.value)
+        .map((cell) => cell.index);
+
+      if (isMaximizing) {
+        let bestScore = -Infinity;
+        availableMoves.forEach((index) => {
+          board[index] = 'O';
+          const score = minimax(board, false);
+          board[index] = '';
+          bestScore = Math.max(bestScore, score);
+        });
+        return bestScore;
+      }
+
+      let bestScore = Infinity;
+      availableMoves.forEach((index) => {
+        board[index] = 'X';
+        const score = minimax(board, true);
+        board[index] = '';
+        bestScore = Math.min(bestScore, score);
+      });
+      return bestScore;
+    }
+
+    function getComputerMove() {
+      const availableMoves = gameState.options
+        .map((value, index) => ({ value, index }))
+        .filter((cell) => !cell.value)
+        .map((cell) => cell.index);
+
+      let bestMove = availableMoves[0];
+      let bestScore = -Infinity;
+
+      availableMoves.forEach((index) => {
+        gameState.options[index] = 'O';
+        const score = minimax(gameState.options, false);
+        gameState.options[index] = '';
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestMove = index;
+        }
+      });
+
+      return bestMove;
     }
 
     function drawWinningLine(pattern) {
@@ -673,8 +734,8 @@
           return;
         }
 
-        const chosen = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        gameState.options[chosen.index] = 'O';
+        const chosenIndex = getComputerMove();
+        gameState.options[chosenIndex] = 'O';
         playSound('move');
         renderBoard();
 
