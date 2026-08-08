@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jogo da Velha UNIFOR</title>
+  <style>
+    :root {
+      --unifor-blue: #003366;
+      --unifor-blue-light: #0056b3;
+      --unifor-orange: #d97706;
+      --background: #f4f6f9;
+      --surface: #ffffff;
+      --border: #dfe7ee;
+      --text: #17324d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, var(--background), #eef3f8);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(100%, 860px);
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: 0 20px 45px rgba(0, 51, 102, 0.16);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .header {
+      background: linear-gradient(90deg, var(--unifor-blue), var(--unifor-blue-light));
+      color: white;
+      padding: 24px 28px;
+      text-align: center;
+    }
+
+    .header .subtitulo {
+      font-size: 0.95rem;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      opacity: 0.9;
+      margin-bottom: 8px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 2.7rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .panel {
+      padding: 22px 28px 28px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 220px;
+    }
+
+    label {
+      font-weight: 700;
+      color: var(--unifor-blue);
+      font-size: 0.95rem;
+    }
+
+    select, button {
+      font: inherit;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      outline: none;
+    }
+
+    select {
+      background: #f8fbff;
+      color: var(--text);
+    }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 14px;
+      margin: 16px 0 24px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #f9fbff;
+      border: 1px solid var(--border);
+    }
+
+    .score-card {
+      text-align: center;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-weight: 700;
+    }
+
+    .score-card.x {
+      background: rgba(0, 86, 179, 0.1);
+      color: var(--unifor-blue-light);
+    }
+
+    .score-card.o {
+      background: rgba(217, 119, 6, 0.12);
+      color: var(--unifor-orange);
+    }
+
+    .score-card .label {
+      font-size: 0.84rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .score-card .value {
+      font-size: 1.8rem;
+      margin-top: 4px;
+    }
+
+    .round-pill {
+      text-align: center;
+      padding: 10px 16px;
+      background: white;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-weight: 700;
+      color: var(--unifor-blue);
+      min-width: 120px;
+    }
+
+    .status {
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--unifor-blue);
+      margin-bottom: 18px;
+    }
+
+    .board-wrap {
+      position: relative;
+      width: min(100%, 420px);
+      margin: 0 auto;
+      padding: 14px;
+      border-radius: 24px;
+      background: linear-gradient(145deg, #ffffff, #f2f6fb);
+      border: 1px solid var(--border);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      position: relative;
+    }
+
+    .cell {
+      aspect-ratio: 1;
+      border: none;
+      border-radius: 18px;
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      background: white;
+      color: var(--unifor-blue);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+      cursor: pointer;
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
+    }
+
+    .cell:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    .cell:disabled {
+      cursor: default;
+      opacity: 0.95;
+    }
+
+    .cell.x { color: var(--unifor-blue-light); }
+    .cell.o { color: var(--unifor-orange); }
+
+    .win-line {
+      position: absolute;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--unifor-blue-light), var(--unifor-orange));
+      opacity: 0;
+      pointer-events: none;
+      box-shadow: 0 0 20px rgba(0, 86, 179, 0.35);
+      z-index: 2;
+    }
+
+    .win-line.active {
+      opacity: 1;
+    }
+
+    #confetti {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+      border-radius: 24px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .restart-btn {
+      background: linear-gradient(90deg, var(--unifor-orange), #f59e0b);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 10px 20px rgba(217, 119, 6, 0.18);
+      min-width: 220px;
+    }
+
+    .restart-btn:hover {
+      filter: brightness(1.03);
+    }
+
+    @media (max-width: 620px) {
+      .panel { padding: 18px; }
+      .controls { flex-direction: column; }
+      .scoreboard { grid-template-columns: 1fr; }
+      .round-pill { order: -1; }
+      .board-wrap { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <div class="subtitulo">Universidade de Fortaleza</div>
+      <h1>Jogo da Velha</h1>
+    </header>
+
+    <section class="panel">
+      <div class="controls">
+        <div class="control-group">
+          <label for="modeSelect">Modo de Jogo</label>
+          <select id="modeSelect">
+            <option value="pvp">2 Jogadores (PVP)</option>
+            <option value="cpu">Contra o Computador</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="formatSelect">Formato da Partida</label>
+          <select id="formatSelect">
+            <option value="single">Partida Única</option>
+            <option value="bo3">Melhor de 3 (MD3)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="scoreboard">
+        <div class="score-card x">
+          <div class="label">Jogador X</div>
+          <div class="value" id="winsX">0</div>
+        </div>
+        <div class="round-pill" id="roundLabel">Rodada 1/1</div>
+        <div class="score-card o">
+          <div class="label" id="playerOLabel">Jogador O</div>
+          <div class="value" id="winsO">0</div>
+        </div>
+      </div>
+
+      <div class="status" id="status">Vez do Jogador X</div>
+
+      <div class="board-wrap">
+        <canvas id="confetti"></canvas>
+        <div class="board" id="board"></div>
+        <div class="win-line" id="winLine"></div>
+      </div>
+
+      <div class="actions">
+        <button class="restart-btn" id="restartBtn">Reiniciar Jogo</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const winsXEl = document.getElementById('winsX');
+    const winsOEl = document.getElementById('winsO');
+    const roundLabelEl = document.getElementById('roundLabel');
+    const playerOLabelEl = document.getElementById('playerOLabel');
+    const modeSelect = document.getElementById('modeSelect');
+    const formatSelect = document.getElementById('formatSelect');
+    const restartBtn = document.getElementById('restartBtn');
+    const winLineEl = document.getElementById('winLine');
+    const confettiCanvas = document.getElementById('confetti');
+    const ctx = confettiCanvas.getContext('2d');
+
+    const winPatterns = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+
+    const gameState = {
+      options: Array(9).fill(''),
+      currentPlayer: 'X',
+      running: true,
+      winsX: 0,
+      winsO: 0,
+      currentRound: 1,
+      modeSelect: 'pvp',
+      formatSelect: 'single',
+      pendingTimeout: null,
+      isRoundEnding: false,
+      lastWinner: null
+    };
+
+    function resetBoard() {
+      gameState.options = Array(9).fill('');
+      gameState.currentPlayer = 'X';
+      gameState.running = true;
+      gameState.isRoundEnding = false;
+      gameState.lastWinner = null;
+      winLineEl.classList.remove('active');
+      hideConfetti();
+      renderBoard();
+      updateStatus(`Vez do Jogador X`);
+      if (gameState.modeSelect === 'cpu' && gameState.currentPlayer === 'O') {
+        queueComputerMove();
+      }
+    }
+
+    function resetGame() {
+      gameState.winsX = 0;
+      gameState.winsO = 0;
+      gameState.currentRound = 1;
+      clearTimeout(gameState.pendingTimeout);
+      gameState.pendingTimeout = null;
+      updateScoreboard();
+      updateRoundLabel();
+      resetBoard();
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      gameState.options.forEach((value, index) => {
+        const button = document.createElement('button');
+        button.className = `cell ${value ? value.toLowerCase() : ''}`;
+        button.dataset.index = index;
+        button.disabled = !gameState.running || !!value || gameState.isRoundEnding;
+        button.textContent = value;
+        button.addEventListener('click', handleCellClick);
+        boardEl.appendChild(button);
+      });
+    }
+
+    function updateScoreboard() {
+      winsXEl.textContent = gameState.winsX;
+      winsOEl.textContent = gameState.winsO;
+    }
+
+    function updateRoundLabel() {
+      const totalRounds = gameState.formatSelect === 'bo3' ? 3 : 1;
+      roundLabelEl.textContent = `Rodada ${gameState.currentRound}/${totalRounds}`;
+    }
+
+    function updateStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    function setModeLabel() {
+      playerOLabelEl.textContent = gameState.modeSelect === 'cpu' ? 'Computador' : 'Jogador O';
+    }
+
+    function checkWinner() {
+      for (const pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        const values = [gameState.options[a], gameState.options[b], gameState.options[c]];
+        if (values.every((value) => value && value === values[0])) {
+          return { pattern, winner: values[0] };
+        }
+      }
+      if (gameState.options.every((value) => value)) {
+        return { pattern: null, winner: 'draw' };
+      }
+      return null;
+    }
+
+    function drawWinningLine(pattern) {
+      if (!pattern) {
+        winLineEl.classList.remove('active');
+        return;
+      }
+
+      const cells = Array.from(boardEl.children);
+      const [a, b, c] = pattern;
+      const firstCell = cells[a].getBoundingClientRect();
+      const secondCell = cells[b].getBoundingClientRect();
+      const boardRect = boardEl.getBoundingClientRect();
+
+      const startX = firstCell.left - boardRect.left + firstCell.width / 2;
+      const startY = firstCell.top - boardRect.top + firstCell.height / 2;
+      const endX = secondCell.left - boardRect.left + secondCell.width / 2;
+      const endY = secondCell.top - boardRect.top + secondCell.height / 2;
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const length = Math.hypot(dx, dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+      winLineEl.style.left = `${startX}px`;
+      winLineEl.style.top = `${startY}px`;
+      winLineEl.style.width = `${length + 16}px`;
+      winLineEl.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+      winLineEl.classList.add('active');
+    }
+
+    function playSound(type) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const ctxAudio = new AudioCtx();
+      const oscillator = ctxAudio.createOscillator();
+      const gainNode = ctxAudio.createGain();
+      const now = ctxAudio.currentTime;
+
+      oscillator.connect(gainNode);
+      gainNode.connect(ctxAudio.destination);
+
+      const presets = {
+        move: { frequency: 660, duration: 0.08, type: 'triangle' },
+        win: { frequency: 880, duration: 0.25, type: 'square' },
+        draw: { frequency: 420, duration: 0.2, type: 'sine' }
+      };
+
+      const preset = presets[type] || presets.move;
+      oscillator.type = preset.type;
+      oscillator.frequency.setValueAtTime(preset.frequency, now);
+      gainNode.gain.setValueAtTime(0.08, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + preset.duration);
+      oscillator.start(now);
+      oscillator.stop(now + preset.duration);
+      ctxAudio.close().catch(() => {});
+    }
+
+    function spawnConfetti() {
+      const pieces = [];
+      const width = confettiCanvas.width = confettiCanvas.offsetWidth;
+      const height = confettiCanvas.height = confettiCanvas.offsetHeight;
+
+      for (let i = 0; i < 90; i += 1) {
+        pieces.push({
+          x: Math.random() * width,
+          y: -20 - Math.random() * height * 0.2,
+          size: 6 + Math.random() * 6,
+          color: ['#003366', '#0056b3', '#d97706', '#f59e0b'][Math.floor(Math.random() * 4)],
+          speed: 2 + Math.random() * 3,
+          drift: Math.random() * 3 - 1.5,
+          rotation: Math.random() * 360,
+          rotationSpeed: Math.random() * 4 - 2
+        });
+      }
+
+      let animationFrame;
+      const animate = () => {
+        ctx.clearRect(0, 0, width, height);
+        pieces.forEach((piece) => {
+          piece.y += piece.speed;
+          piece.x += piece.drift;
+          piece.rotation += piece.rotationSpeed;
+          ctx.save();
+          ctx.translate(piece.x, piece.y);
+          ctx.rotate(piece.rotation * Math.PI / 180);
+          ctx.fillStyle = piece.color;
+          ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size / 2.5);
+          ctx.restore();
+        });
+
+        if (pieces.some((piece) => piece.y < height + 20)) {
+          animationFrame = requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, width, height);
+        }
+      };
+
+      animate();
+    }
+
+    function hideConfetti() {
+      ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    }
+
+    function finishRound(result) {
+      gameState.running = false;
+      gameState.isRoundEnding = true;
+      renderBoard();
+
+      if (result.winner === 'draw') {
+        playSound('draw');
+        updateStatus('Rodada Empatada!');
+      } else {
+        const winnerLabel = result.winner === 'X' ? 'Jogador X' : (gameState.modeSelect === 'cpu' && result.winner === 'O' ? 'Computador' : 'Jogador O');
+        playSound('win');
+        if (result.winner === 'X') {
+          gameState.winsX += 1;
+        } else {
+          gameState.winsO += 1;
+        }
+        updateScoreboard();
+        updateStatus(`Vencedor da rodada: ${winnerLabel}`);
+        drawWinningLine(result.pattern);
+        spawnConfetti();
+      }
+
+      clearTimeout(gameState.pendingTimeout);
+      gameState.pendingTimeout = setTimeout(() => {
+        const totalRounds = gameState.formatSelect === 'bo3' ? 3 : 1;
+        const winConditionReached = gameState.winsX === 2 || gameState.winsO === 2;
+        const roundCompleted = gameState.currentRound >= totalRounds;
+
+        if (gameState.formatSelect === 'bo3' && (winConditionReached || roundCompleted)) {
+          const champion = gameState.winsX === gameState.winsO ? 'Empate geral!' : (gameState.winsX > gameState.winsO ? 'Jogador X' : (gameState.modeSelect === 'cpu' ? 'Computador' : 'Jogador O'));
+          updateStatus(champion === 'Empate geral!' ? 'Partida empatada!' : `Campeão da partida: ${champion}`);
+          gameState.running = false;
+          gameState.isRoundEnding = false;
+          renderBoard();
+          winLineEl.classList.remove('active');
+          hideConfetti();
+          return;
+        }
+
+        if (gameState.formatSelect === 'bo3' && gameState.currentRound < totalRounds) {
+          gameState.currentRound += 1;
+          updateRoundLabel();
+        }
+
+        if (gameState.formatSelect === 'single') {
+          gameState.currentRound = 1;
+          updateRoundLabel();
+        }
+
+        resetBoard();
+      }, 1800);
+    }
+
+    function handleCellClick(event) {
+      const index = Number(event.currentTarget.dataset.index);
+      if (!gameState.running || gameState.options[index] || gameState.isRoundEnding) {
+        return;
+      }
+
+      gameState.options[index] = gameState.currentPlayer;
+      playSound('move');
+      renderBoard();
+
+      const result = checkWinner();
+      if (result) {
+        finishRound(result);
+        return;
+      }
+
+      gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
+      updateStatus(`Vez do ${gameState.currentPlayer === 'X' ? 'Jogador X' : (gameState.modeSelect === 'cpu' ? 'Computador' : 'Jogador O')}`);
+      renderBoard();
+
+      if (gameState.modeSelect === 'cpu' && gameState.currentPlayer === 'O') {
+        queueComputerMove();
+      }
+    }
+
+    function queueComputerMove() {
+      clearTimeout(gameState.pendingTimeout);
+      gameState.running = false;
+      gameState.pendingTimeout = setTimeout(() => {
+        const emptyCells = gameState.options
+          .map((value, index) => ({ value, index }))
+          .filter((cell) => !cell.value);
+
+        if (!emptyCells.length) {
+          return;
+        }
+
+        const chosen = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        gameState.options[chosen.index] = 'O';
+        playSound('move');
+        renderBoard();
+
+        const result = checkWinner();
+        if (result) {
+          finishRound(result);
+          return;
+        }
+
+        gameState.currentPlayer = 'X';
+        gameState.running = true;
+        updateStatus('Vez do Jogador X');
+        renderBoard();
+      }, 400);
+    }
+
+    modeSelect.addEventListener('change', () => {
+      gameState.modeSelect = modeSelect.value;
+      setModeLabel();
+      resetGame();
+    });
+
+    formatSelect.addEventListener('change', () => {
+      gameState.formatSelect = formatSelect.value;
+      updateRoundLabel();
+      resetGame();
+    });
+
+    restartBtn.addEventListener('click', () => {
+      resetGame();
+    });
+
+    function init() {
+      setModeLabel();
+      updateRoundLabel();
+      updateScoreboard();
+      resetBoard();
+    }
+
+    init();
+  </script>
+</body>
+</html>
