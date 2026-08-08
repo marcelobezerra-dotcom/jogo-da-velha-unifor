@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,7 +16,9 @@
       --text: #17324d;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -85,7 +88,8 @@
       font-size: 0.95rem;
     }
 
-    select, button {
+    select,
+    button {
       font: inherit;
       border-radius: 999px;
       border: 1px solid var(--border);
@@ -198,8 +202,13 @@
       opacity: 0.95;
     }
 
-    .cell.x { color: var(--unifor-blue-light); }
-    .cell.o { color: var(--unifor-orange); }
+    .cell.x {
+      color: var(--unifor-blue-light);
+    }
+
+    .cell.o {
+      color: var(--unifor-orange);
+    }
 
     .win-line {
       position: absolute;
@@ -250,14 +259,29 @@
     }
 
     @media (max-width: 620px) {
-      .panel { padding: 18px; }
-      .controls { flex-direction: column; }
-      .scoreboard { grid-template-columns: 1fr; }
-      .round-pill { order: -1; }
-      .board-wrap { padding: 10px; }
+      .panel {
+        padding: 18px;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
+
+      .scoreboard {
+        grid-template-columns: 1fr;
+      }
+
+      .round-pill {
+        order: -1;
+      }
+
+      .board-wrap {
+        padding: 10px;
+      }
     }
   </style>
 </head>
+
 <body>
   <main class="app">
     <header class="header">
@@ -482,7 +506,7 @@
       gainNode.gain.exponentialRampToValueAtTime(0.001, now + preset.duration);
       oscillator.start(now);
       oscillator.stop(now + preset.duration);
-      ctxAudio.close().catch(() => {});
+      ctxAudio.close().catch(() => { });
     }
 
     function spawnConfetti() {
@@ -674,4 +698,5 @@
     init();
   </script>
 </body>
+
 </html>
