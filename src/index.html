@@ -203,13 +203,15 @@
 
     .win-line {
       position: absolute;
-      height: 6px;
+      height: 10px;
       border-radius: 999px;
       background: linear-gradient(90deg, var(--unifor-blue-light), var(--unifor-orange));
       opacity: 0;
       pointer-events: none;
-      box-shadow: 0 0 20px rgba(0, 86, 179, 0.35);
-      z-index: 2;
+      box-shadow: 0 0 24px rgba(0, 86, 179, 0.4);
+      z-index: 5;
+      transform-origin: 0 0;
+      overflow: visible;
     }
 
     .win-line.active {
@@ -219,9 +221,12 @@
     #confetti {
       position: absolute;
       inset: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
       z-index: 3;
       border-radius: 24px;
+      display: block;
     }
 
     .actions {
@@ -315,6 +320,7 @@
     const formatSelect = document.getElementById('formatSelect');
     const restartBtn = document.getElementById('restartBtn');
     const winLineEl = document.getElementById('winLine');
+    const boardWrapEl = document.querySelector('.board-wrap');
     const confettiCanvas = document.getElementById('confetti');
     const ctx = confettiCanvas.getContext('2d');
 
@@ -335,7 +341,8 @@
       formatSelect: 'single',
       pendingTimeout: null,
       isRoundEnding: false,
-      lastWinner: null
+      lastWinner: null,
+      confettiAnimationFrame: null
     };
 
     function resetBoard() {
@@ -416,24 +423,37 @@
       }
 
       const cells = Array.from(boardEl.children);
-      const [a, b, c] = pattern;
+      const [a, , c] = pattern;
       const firstCell = cells[a].getBoundingClientRect();
-      const secondCell = cells[b].getBoundingClientRect();
-      const boardRect = boardEl.getBoundingClientRect();
+      const thirdCell = cells[c].getBoundingClientRect();
+      const boardRect = boardWrapEl.getBoundingClientRect();
 
-      const startX = firstCell.left - boardRect.left + firstCell.width / 2;
-      const startY = firstCell.top - boardRect.top + firstCell.height / 2;
-      const endX = secondCell.left - boardRect.left + secondCell.width / 2;
-      const endY = secondCell.top - boardRect.top + secondCell.height / 2;
-      const dx = endX - startX;
-      const dy = endY - startY;
-      const length = Math.hypot(dx, dy);
-      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      const firstCenterX = firstCell.left - boardRect.left + firstCell.width / 2;
+      const firstCenterY = firstCell.top - boardRect.top + firstCell.height / 2;
+      const thirdCenterX = thirdCell.left - boardRect.left + thirdCell.width / 2;
+      const thirdCenterY = thirdCell.top - boardRect.top + thirdCell.height / 2;
 
-      winLineEl.style.left = `${startX}px`;
-      winLineEl.style.top = `${startY}px`;
-      winLineEl.style.width = `${length + 16}px`;
-      winLineEl.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+      const dx = thirdCenterX - firstCenterX;
+      const dy = thirdCenterY - firstCenterY;
+      const angleRad = Math.atan2(dy, dx);
+      const offsetX = Math.cos(angleRad) * (firstCell.width / 2);
+      const offsetY = Math.sin(angleRad) * (firstCell.height / 2);
+      const endOffsetX = Math.cos(angleRad) * (thirdCell.width / 2);
+      const endOffsetY = Math.sin(angleRad) * (thirdCell.height / 2);
+
+      const lineStartX = firstCenterX - offsetX;
+      const lineStartY = firstCenterY - offsetY;
+      const lineEndX = thirdCenterX + endOffsetX;
+      const lineEndY = thirdCenterY + endOffsetY;
+      const lineDx = lineEndX - lineStartX;
+      const lineDy = lineEndY - lineStartY;
+      const length = Math.hypot(lineDx, lineDy);
+      const angle = Math.atan2(lineDy, lineDx) * 180 / Math.PI;
+
+      winLineEl.style.left = `${lineStartX}px`;
+      winLineEl.style.top = `${lineStartY}px`;
+      winLineEl.style.width = `${length}px`;
+      winLineEl.style.transform = `rotate(${angle}deg)`;
       winLineEl.classList.add('active');
     }
 
@@ -466,9 +486,13 @@
     }
 
     function spawnConfetti() {
+      if (gameState.confettiAnimationFrame) {
+        cancelAnimationFrame(gameState.confettiAnimationFrame);
+      }
+
       const pieces = [];
-      const width = confettiCanvas.width = confettiCanvas.offsetWidth;
-      const height = confettiCanvas.height = confettiCanvas.offsetHeight;
+      const width = confettiCanvas.width = confettiCanvas.offsetWidth || confettiCanvas.parentElement?.clientWidth || 320;
+      const height = confettiCanvas.height = confettiCanvas.offsetHeight || confettiCanvas.parentElement?.clientHeight || 320;
 
       for (let i = 0; i < 90; i += 1) {
         pieces.push({
@@ -483,7 +507,6 @@
         });
       }
 
-      let animationFrame;
       const animate = () => {
         ctx.clearRect(0, 0, width, height);
         pieces.forEach((piece) => {
@@ -499,9 +522,10 @@
         });
 
         if (pieces.some((piece) => piece.y < height + 20)) {
-          animationFrame = requestAnimationFrame(animate);
+          gameState.confettiAnimationFrame = requestAnimationFrame(animate);
         } else {
           ctx.clearRect(0, 0, width, height);
+          gameState.confettiAnimationFrame = null;
         }
       };
 
@@ -509,6 +533,10 @@
     }
 
     function hideConfetti() {
+      if (gameState.confettiAnimationFrame) {
+        cancelAnimationFrame(gameState.confettiAnimationFrame);
+        gameState.confettiAnimationFrame = null;
+      }
       ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
     }
 
