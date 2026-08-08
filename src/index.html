@@ -347,6 +347,8 @@
     const boardWrapEl = document.querySelector('.board-wrap');
     const confettiCanvas = document.getElementById('confetti');
     const ctx = confettiCanvas.getContext('2d');
+    let audioContext = null;
+    let masterGainNode = null;
 
     const winPatterns = [
       [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -481,17 +483,34 @@
       winLineEl.classList.add('active');
     }
 
-    function playSound(type) {
+    function getAudioContext() {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
+      if (!AudioCtx) return null;
 
-      const ctxAudio = new AudioCtx();
-      const oscillator = ctxAudio.createOscillator();
-      const gainNode = ctxAudio.createGain();
-      const now = ctxAudio.currentTime;
+      if (!audioContext) {
+        audioContext = new AudioCtx();
+        masterGainNode = audioContext.createGain();
+        masterGainNode.gain.value = 0.12;
+        masterGainNode.connect(audioContext.destination);
+      }
+
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => { });
+      }
+
+      return audioContext;
+    }
+
+    function playSound(type) {
+      const context = getAudioContext();
+      if (!context) return;
+
+      const oscillator = context.createOscillator();
+      const gainNode = context.createGain();
+      const now = context.currentTime;
 
       oscillator.connect(gainNode);
-      gainNode.connect(ctxAudio.destination);
+      gainNode.connect(masterGainNode || context.destination);
 
       const presets = {
         move: { frequency: 660, duration: 0.08, type: 'triangle' },
@@ -502,11 +521,11 @@
       const preset = presets[type] || presets.move;
       oscillator.type = preset.type;
       oscillator.frequency.setValueAtTime(preset.frequency, now);
-      gainNode.gain.setValueAtTime(0.08, now);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + preset.duration);
+      gainNode.gain.setValueAtTime(0.0001, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.12, now + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + preset.duration);
       oscillator.start(now);
-      oscillator.stop(now + preset.duration);
-      ctxAudio.close().catch(() => { });
+      oscillator.stop(now + preset.duration + 0.02);
     }
 
     function spawnConfetti() {
